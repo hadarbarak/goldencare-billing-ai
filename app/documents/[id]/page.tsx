@@ -83,7 +83,7 @@ export default function DocumentDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {data.mimeType.includes("pdf") && (
+          {data.mimeType?.includes("pdf") && (
             <>
               <a
                 className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm"
@@ -125,7 +125,7 @@ export default function DocumentDetailPage() {
           <h2 className="font-semibold">מסמך מקור</h2>
           <p className="text-xs text-stone-500">אם התצוגה קטנה — פתחו בחלון מלא או הורידו את ה-PDF</p>
         </div>
-        {data.mimeType.includes("pdf") ? (
+        {data.mimeType?.includes("pdf") ? (
           <iframe
             title="original"
             className="h-[min(90vh,1100px)] w-full rounded-lg border border-stone-200 bg-stone-100"

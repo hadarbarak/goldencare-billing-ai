@@ -437,7 +437,7 @@ export async function writeLedger(input: LedgerWriteInput): Promise<LedgerWriteR
       const nextFingerprint = invoiceContentFingerprint(input.invoice);
 
       if (previousExtraction === input.extractionId) {
-        match.values = [undefined, ...rowValues(input, writtenAt)];
+        match.values = rowValues(input, writtenAt);
         rebuildLineItems(workbook);
         await workbook.xlsx.writeFile(paths.excel);
         return { action: "updated_review", excelRow: match.number };

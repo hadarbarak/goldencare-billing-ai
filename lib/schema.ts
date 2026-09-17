@@ -13,27 +13,61 @@ import { z } from "zod";
  * fields are shared; line-item shape follows `document_type`.
  */
 
-const rawField = z.object({
-  value: z.string().nullable(),
-  source_text: z.string().nullable(),
-});
+const emptyRawField = { value: null, source_text: null };
+
+function coerceRawField(val: unknown) {
+  if (val == null) return emptyRawField;
+  if (typeof val === "string" || typeof val === "number") {
+    const text = String(val);
+    return { value: text, source_text: text };
+  }
+  if (typeof val === "object" && "value" in val) {
+    const obj = val as { value: unknown; source_text?: unknown };
+    return {
+      value: obj.value == null ? null : String(obj.value),
+      source_text: obj.source_text == null ? null : String(obj.source_text),
+    };
+  }
+  return emptyRawField;
+}
+
+const rawField = z.preprocess(
+  coerceRawField,
+  z.object({
+    value: z.string().nullable(),
+    source_text: z.string().nullable(),
+  }),
+);
+
+function coerceRawLineString(val: unknown): string | null {
+  if (val == null) return null;
+  if (typeof val === "string") return val;
+  if (typeof val === "number" || typeof val === "boolean") return String(val);
+  if (typeof val === "object" && val !== null && "value" in val) {
+    const inner = (val as { value: unknown }).value;
+    return inner == null ? null : String(inner);
+  }
+  return null;
+}
+
+const rawLineString = z.preprocess(coerceRawLineString, z.string().nullable());
 
 export type RawField = z.infer<typeof rawField>;
 
 export const rawLineItemSchema = z.object({
-  line_number: z.string().nullable().optional(),
-  description: z.string().nullable(),
-  quantity: z.string().nullable().optional(),
-  unit_of_measure: z.string().nullable().optional(),
-  unit_price: z.string().nullable().optional(),
-  amount: z.string().nullable().optional(),
-  vat_rate: z.string().nullable().optional(),
-  vat_amount: z.string().nullable().optional(),
-  document_date: z.string().nullable().optional(),
-  document_number: z.string().nullable().optional(),
-  charged_amount: z.string().nullable().optional(),
-  paid_amount: z.string().nullable().optional(),
-  outstanding_amount: z.string().nullable().optional(),
+  line_number: rawLineString.optional(),
+  description: rawLineString,
+  quantity: rawLineString.optional(),
+  unit_of_measure: rawLineString.optional(),
+  unit_price: rawLineString.optional(),
+  amount: rawLineString.optional(),
+  vat_rate: rawLineString.optional(),
+  vat_amount: rawLineString.optional(),
+  document_date: rawLineString.optional(),
+  document_number: rawLineString.optional(),
+  charged_amount: rawLineString.optional(),
+  paid_amount: rawLineString.optional(),
+  outstanding_amount: rawLineString.optional(),
 });
 
 export const rawExtractionSchema = z.object({
@@ -60,7 +94,7 @@ export const rawExtractionSchema = z.object({
   outstanding_balance: rawField.optional(),
   payment_terms: rawField.optional(),
   due_date: rawField.optional(),
-  line_items: z.array(rawLineItemSchema),
+  line_items: z.array(rawLineItemSchema).catch([]),
   notes: rawField.optional(),
 });
 
