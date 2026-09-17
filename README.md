@@ -10,6 +10,18 @@ npm install && npm run dev
 
 ברירת המחדל היא `LLM_PROVIDER=mock` — בלי מפתח API. פותחים http://localhost:3000.
 
+### הרצה עם OpenAI
+
+לבדיקת extraction עם מודל אמיתי, יוצרים `.env` מקומי:
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o
+```
+
+`.env` נמצא ב-`.gitignore` ואינו נשמר ב-Git. ללא `.env`, המערכת נשארת במצב Mock וניתנת להרצה ללא API key.
+
 `npm run setup` עשוי להוריד פעם אחת את Noto Sans Hebrew כדי לייצר את מסמכי הבדיקה בעברית. אחרי זה הריצה עצמה מקומית.
 
 ## הדגמה מקצה לקצה
@@ -115,6 +127,19 @@ Processed records are written as active. Needs Review records remain in the ledg
 5. סה״כ שלא מתאים לפירוט → Needs Review (`invoice-mismatch.pdf`)
 
 Ground truth בודק רק שדות שמופיעים במסמך. המודל לא נענש על Cost Center / GL Account שלא היו בדף. דיוק ברמת שדה, שורות פירוט ב-F1, ואחרי שינוי פרומפט — Before/After.
+
+### תוצאות עם GPT-4o
+
+הרגרסיה הורצה גם מול `LLM_PROVIDER=openai` על חמשת מסמכי הבדיקה. בכל הרצה שונה רכיב אחד בלבד:
+
+| Run | Change | Field Accuracy | Line-item F1 |
+| --- | --- | ---: | ---: |
+| #9 | Prompt v1 baseline | 5.4% | 0.0 |
+| #10 | Structured-output prompt (v2) | 57.1% | 0.8 |
+| #11 | Deterministic RTL preprocessing | 83.9% | 0.8 |
+| #12 | Vision fallback fixed | **94.6%** | **0.8** |
+
+ב-Run #12 ארבעת מסמכי ה-PDF עם שכבת הטקסט הגיעו ל-47/47 שדות נכונים. שלוש טעויות השדה שנותרו היו במסמך הסרוק שעבר דרך Vision. לא בוצע tuning נוסף על חמשת מסמכי הבדיקה כדי לא לבצע overfitting למדגם קטן.
 
 ```bash
 npm run regression
