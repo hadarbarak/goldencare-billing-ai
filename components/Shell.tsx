@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { DownloadExcelButton } from "@/components/DownloadExcelButton";
 
 const NAV = [
   { href: "/", label: "Dashboard" },
@@ -35,10 +36,13 @@ export function Shell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="px-5 py-4 text-xs text-teal-400">מקור האמת: קובץ Excel אחד</div>
+        <div className="space-y-3 border-t border-teal-900 px-4 py-4">
+          <DownloadExcelButton className="w-full rounded-lg bg-teal-800 px-3 py-2 text-sm text-white hover:bg-teal-700" />
+          <div className="text-xs text-teal-400">מקור האמת: קובץ Excel אחד</div>
+        </div>
       </aside>
       <div className="min-w-0 flex-1">
-        <main className="mx-auto max-w-6xl px-6 py-6">{children}</main>
+        <main className="mx-auto max-w-7xl px-6 py-6">{children}</main>
       </div>
     </div>
   );

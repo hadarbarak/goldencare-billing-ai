@@ -295,7 +295,7 @@ export function toSettlementForm(invoice: CanonicalInvoice): SettlementForm {
     outstandingBalance: invoice.outstanding_balance,
     paymentTerms: invoice.payment_terms,
     dueDate: invoice.due_date,
-    invoiceLineItems: invoice.invoice_line_items.map((item) => ({
+    invoiceLineItems: (invoice.invoice_line_items ?? []).map((item) => ({
       lineNumber: item.line_number ?? null,
       description: item.description ?? "",
       quantity: item.quantity,
@@ -305,7 +305,7 @@ export function toSettlementForm(invoice: CanonicalInvoice): SettlementForm {
       vatRate: item.vat_rate ?? null,
       vatAmount: item.vat_amount ?? null,
     })),
-    settlementLineItems: invoice.settlement_line_items.map((item) => ({
+    settlementLineItems: (invoice.settlement_line_items ?? []).map((item) => ({
       documentDate: item.document_date,
       documentNumber: item.document_number,
       description: item.description ?? "",

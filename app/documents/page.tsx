@@ -7,6 +7,8 @@ import { formatMoney } from "@/lib/present";
 
 type Row = {
   documentId: number;
+  filename: string;
+  documentType: string | null;
   supplier: string;
   period: string;
   amount: number | null;
@@ -15,13 +17,23 @@ type Row = {
   method: string;
 };
 
+function kindLabel(type: string | null): string {
+  if (type === "settlement") return "טופס התחשבנות";
+  if (type === "invoice") return "חשבונית";
+  return "מסמך";
+}
+
 export default function DocumentsPage() {
   const [items, setItems] = useState<Row[]>([]);
 
   useEffect(() => {
     fetch("/api/documents")
-      .then((res) => res.json())
-      .then((json) => setItems(json.items));
+      .then(async (res) => {
+        if (!res.ok) return { items: [] as Row[] };
+        return res.json() as Promise<{ items?: Row[] }>;
+      })
+      .then((json) => setItems(json.items ?? []))
+      .catch(() => setItems([]));
   }, []);
 
   return (
@@ -30,7 +42,8 @@ export default function DocumentsPage() {
       <table className="w-full text-right text-sm">
         <thead className="text-stone-500">
           <tr>
-            <th className="py-2">Supplier</th>
+            <th className="py-2">סוג</th>
+            <th>ספק</th>
             <th>Period</th>
             <th>Amount</th>
             <th>Method</th>
@@ -40,10 +53,12 @@ export default function DocumentsPage() {
         <tbody>
           {items.map((row) => (
             <tr key={row.documentId} className="border-t border-stone-100 hover:bg-stone-50">
-              <td className="py-3">
+              <td className="py-3 text-stone-600">{kindLabel(row.documentType)}</td>
+              <td>
                 <Link className="text-teal-900" href={`/documents/${row.documentId}`}>
                   {row.supplier}
                 </Link>
+                <div className="text-xs text-stone-400">{row.filename}</div>
               </td>
               <td>{row.period}</td>
               <td>{formatMoney(row.amount, row.currency)}</td>

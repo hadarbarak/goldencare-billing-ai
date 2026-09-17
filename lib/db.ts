@@ -460,7 +460,8 @@ export function updateDocumentText(id: number, text: string, method: string) {
 }
 
 export function listFinanceDocuments() {
-  return getDb()
+  const currentFiles = new Set(samples.map((sample) => sample.filename.toLowerCase()));
+  const rows = getDb()
     .prepare(
       `SELECT d.id as document_id, d.filename, d.subject, d.from_address, d.source, d.storage_path, d.mime_type,
               d.extracted_text, d.normalized_text, d.body_text, d.headers_json, d.created_at, d.extraction_method,
@@ -469,10 +470,10 @@ export function listFinanceDocuments() {
        LEFT JOIN extractions e ON e.id = (
          SELECT id FROM extractions WHERE document_id = d.id ORDER BY id DESC LIMIT 1
        )
-       WHERE d.source != 'regression'
+       WHERE d.filename IN (${samples.map(() => "?").join(",")})
        ORDER BY d.id DESC`,
     )
-    .all() as Array<{
+    .all(...samples.map((sample) => sample.filename)) as Array<{
     document_id: number;
     filename: string;
     subject: string | null;
@@ -492,6 +493,14 @@ export function listFinanceDocuments() {
     issues_json: string | null;
     model: string | null;
   }>;
+
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = row.filename.toLowerCase();
+    if (!currentFiles.has(key) || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function getFinanceDocument(documentId: number) {

@@ -12,7 +12,12 @@ export async function GET() {
   getDb();
   seedIfEmpty();
   const items = listFinanceDocuments().map((row) => {
-    const invoice = row.canonical_json ? (JSON.parse(row.canonical_json) as CanonicalInvoice) : null;
+    let invoice: CanonicalInvoice | null = null;
+    try {
+      invoice = row.canonical_json ? (JSON.parse(row.canonical_json) as CanonicalInvoice) : null;
+    } catch {
+      invoice = null;
+    }
     const settlement = invoice ? toSettlementForm(invoice) : null;
     return {
       documentId: row.document_id,
@@ -20,6 +25,7 @@ export async function GET() {
       filename: row.filename,
       source: row.source,
       status: row.status ? normalizeStatus(row.status) : "failed",
+      documentType: settlement?.documentType ?? null,
       supplier: settlement?.supplierName ?? "—",
       period: settlement
         ? formatPeriod(settlement.servicePeriodStart, settlement.servicePeriodEnd, settlement.documentDate)

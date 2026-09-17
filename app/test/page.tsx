@@ -90,7 +90,7 @@ export default function TestPage() {
           <section className="rounded-2xl border border-stone-200 bg-white p-5">
             <h2 className="mb-3 font-semibold">Original</h2>
             {preview && file?.type.includes("pdf") ? (
-              <iframe title="pdf" className="h-[560px] w-full rounded-lg bg-stone-100" src={preview} />
+              <iframe title="pdf" className="h-[min(80vh,900px)] w-full rounded-lg bg-stone-100" src={`${preview}#zoom=page-width`} />
             ) : preview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={preview} alt="form" className="max-h-[560px] w-full object-contain" />

@@ -11,7 +11,12 @@ export function ExtractedForm({ settlement }: { settlement: SettlementForm }) {
     ["Tax ID", settlement.supplierTaxId ?? "—"],
     ["Customer", settlement.customerName ?? "—"],
     ["Document date", settlement.documentDate ?? "—"],
-    ["Service period", `${settlement.servicePeriodStart ?? "—"} → ${settlement.servicePeriodEnd ?? "—"}`],
+    [
+      "Service period",
+      settlement.servicePeriodStart || settlement.servicePeriodEnd
+        ? `מ-${settlement.servicePeriodStart ?? "—"} עד ${settlement.servicePeriodEnd ?? "—"}`
+        : "—",
+    ],
     ["Purchase order", settlement.purchaseOrderNumber ?? "—"],
     ["Contract", settlement.contractNumber ?? "—"],
     ["Allocation #", settlement.allocationNumber ?? "—"],
@@ -41,7 +46,9 @@ export function ExtractedForm({ settlement }: { settlement: SettlementForm }) {
           {rows.map(([label, value]) => (
             <tr key={label} className="border-t border-stone-100">
               <td className="py-2 text-stone-500">{label}</td>
-              <td className="font-medium">{value}</td>
+              <td className="font-medium" dir="auto">
+                {value}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -63,12 +70,14 @@ export function ExtractedForm({ settlement }: { settlement: SettlementForm }) {
             <tbody>
               {settlement.settlementLineItems.map((item, index) => (
                 <tr key={`${item.documentNumber}-${index}`} className="border-t border-stone-100">
-                  <td className="py-1">{item.documentDate ?? "—"}</td>
-                  <td>{item.documentNumber ?? "—"}</td>
+                  <td className="py-1" dir="ltr">
+                    {item.documentDate ?? "—"}
+                  </td>
+                  <td dir="ltr">{item.documentNumber ?? "—"}</td>
                   <td>{item.description || "—"}</td>
-                  <td>{formatMoney(item.chargedAmount, settlement.currency ?? "ILS")}</td>
-                  <td>{formatMoney(item.paidAmount, settlement.currency ?? "ILS")}</td>
-                  <td>{formatMoney(item.outstandingAmount, settlement.currency ?? "ILS")}</td>
+                  <td dir="ltr">{formatMoney(item.chargedAmount, settlement.currency ?? "ILS")}</td>
+                  <td dir="ltr">{formatMoney(item.paidAmount, settlement.currency ?? "ILS")}</td>
+                  <td dir="ltr">{formatMoney(item.outstandingAmount, settlement.currency ?? "ILS")}</td>
                 </tr>
               ))}
             </tbody>

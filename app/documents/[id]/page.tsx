@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ExtractedForm } from "@/components/ExtractedForm";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ValidationList } from "@/components/ValidationList";
@@ -22,10 +22,13 @@ type Detail = {
   from: string | null;
   subject: string | null;
   body: string | null;
+  fileRev?: number;
+  redirectTo?: number;
 };
 
 export default function DocumentDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [data, setData] = useState<Detail | null>(null);
   const [draft, setDraft] = useState<SettlementForm | null>(null);
   const [busy, setBusy] = useState(false);
@@ -33,6 +36,10 @@ export default function DocumentDetailPage() {
 
   async function load() {
     const json = await fetch(`/api/documents/${params.id}`).then((res) => res.json());
+    if (json.redirectTo) {
+      router.replace(`/documents/${json.redirectTo}`);
+      return;
+    }
     setData(json);
     setDraft(json.settlement);
   }
@@ -64,46 +71,70 @@ export default function DocumentDetailPage() {
 
   if (!data) return <p>טוען…</p>;
 
+  const fileUrl = `/api/documents/${data.documentId}/file?v=${data.fileRev ?? Date.now()}`;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">{data.filename}</h1>
           <p className="text-sm text-stone-500">
             {data.from} · {data.subject} · {data.method}
           </p>
         </div>
-        <StatusBadge status={data.status} />
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="mb-3 font-semibold">Original document</h2>
-          {data.mimeType.includes("pdf") ? (
-            <iframe title="original" className="h-[640px] w-full rounded-lg bg-stone-100" src={`/api/documents/${data.documentId}/file`} />
-          ) : (
-            <pre className="max-h-[640px] overflow-auto whitespace-pre-wrap text-sm">{data.extractedText || data.body}</pre>
+        <div className="flex flex-wrap items-center gap-2">
+          {data.mimeType.includes("pdf") && (
+            <>
+              <a
+                className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm"
+                href={`${fileUrl}#zoom=page-width`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                פתח מקור בחלון מלא
+              </a>
+              <a className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm" href={`${fileUrl}&download=1`}>
+                הורד PDF
+              </a>
+            </>
           )}
-        </section>
-        <section className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="mb-3 font-semibold">Extracted fields</h2>
-          {data.status === "needs_review" && draft ? (
-            <ReviewEditor
-              draft={draft}
-              onChange={setDraft}
-              onApprove={approve}
-              busy={busy}
-              message={reviewMessage}
-            />
-          ) : data.settlement ? (
-            <ExtractedForm settlement={data.settlement} />
-          ) : (
-            <p>אין חילוץ</p>
-          )}
-          <div className="mt-6">
-            <ValidationList issues={data.issues ?? []} />
-          </div>
-        </section>
+          <StatusBadge status={data.status} />
+        </div>
       </div>
+      <section className="rounded-2xl border border-stone-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold">Extracted fields</h2>
+        {data.status === "needs_review" && draft ? (
+          <ReviewEditor
+            draft={draft}
+            onChange={setDraft}
+            onApprove={approve}
+            busy={busy}
+            message={reviewMessage}
+          />
+        ) : data.settlement ? (
+          <ExtractedForm settlement={data.settlement} />
+        ) : (
+          <p>אין חילוץ</p>
+        )}
+        <div className="mt-6">
+          <ValidationList issues={data.issues ?? []} />
+        </div>
+      </section>
+      <section className="rounded-2xl border border-stone-200 bg-white p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-semibold">מסמך מקור</h2>
+          <p className="text-xs text-stone-500">אם התצוגה קטנה — פתחו בחלון מלא או הורידו את ה-PDF</p>
+        </div>
+        {data.mimeType.includes("pdf") ? (
+          <iframe
+            title="original"
+            className="h-[min(90vh,1100px)] w-full rounded-lg border border-stone-200 bg-stone-100"
+            src={`${fileUrl}#toolbar=1&navpanes=0&zoom=page-width`}
+          />
+        ) : (
+          <pre className="max-h-[640px] overflow-auto whitespace-pre-wrap text-sm">{data.extractedText || data.body}</pre>
+        )}
+      </section>
     </div>
   );
 }

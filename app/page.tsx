@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/present";
+import { DownloadExcelButton } from "@/components/DownloadExcelButton";
 
 type Dashboard = {
   totals: { processedForms: number; heldCount: number; amount: number; accuracy: number | null };
@@ -59,9 +60,12 @@ export default function DashboardPage() {
             <h1 className="text-xl font-semibold">Email Simulator</h1>
             <p className="text-sm text-stone-500">Payload אמיתי: headers, body, attachment. בלי חיבור לתיבת מייל.</p>
           </div>
-          <button className="rounded-full bg-teal-800 px-5 py-2 text-white disabled:opacity-50" disabled={busy} onClick={simulate}>
-            {busy ? "שולח…" : "Simulate Incoming Email"}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <DownloadExcelButton className="rounded-full border border-stone-300 bg-white px-5 py-2 text-sm" />
+            <button className="rounded-full bg-teal-800 px-5 py-2 text-white disabled:opacity-50" disabled={busy} onClick={simulate}>
+              {busy ? "שולח…" : "Simulate Incoming Email"}
+            </button>
+          </div>
         </div>
         <pre className="overflow-auto rounded-xl bg-stone-950 p-4 text-left text-xs leading-5 text-stone-100" dir="ltr">
           {JSON.stringify(payload, null, 2)}
