@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { REGRESSION_DISPLAY_FIELDS } from "@/lib/schema";
 import { LABELED_SUITE_SIZE } from "@/lib/fixtures/samples";
 
+type StoredRun = {
+  id: number;
+  field_accuracy: number | null;
+  line_item_f1: number | null;
+  prompt_version: number | null;
+  finished_at: string | null;
+  summary_json: string | null;
+};
+
 type RunResult = {
   runId: number;
   promptVersion: number;
@@ -26,6 +35,26 @@ type RunResult = {
   }>;
 };
 
+function resultFromStoredRun(run: StoredRun): RunResult | null {
+  if (!run.summary_json) return null;
+  try {
+    const summary = JSON.parse(run.summary_json) as Partial<RunResult> & {
+      promptVersion?: number;
+      previousAccuracy?: number | null;
+    };
+    if (!summary.aggregate || !summary.cases) return null;
+    return {
+      runId: run.id,
+      promptVersion: run.prompt_version ?? summary.promptVersion ?? 0,
+      previousAccuracy: summary.previousAccuracy ?? null,
+      aggregate: summary.aggregate,
+      cases: summary.cases,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function pct(n: number) {
   return `${(n * 100).toFixed(1)}%`;
 }
@@ -34,7 +63,7 @@ export default function RegressionPage() {
   const [meta, setMeta] = useState<{
     provider?: string;
     cases: Array<{ name: string; filename: string }>;
-    runs: Array<{ id: number; field_accuracy: number | null; prompt_version: number | null }>;
+    runs: StoredRun[];
   } | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -42,7 +71,11 @@ export default function RegressionPage() {
   useEffect(() => {
     fetch("/api/regression")
       .then((r) => r.json())
-      .then(setMeta);
+      .then((json) => {
+        setMeta(json);
+        const latest = json.runs?.[0] as StoredRun | undefined;
+        if (latest) setResult(resultFromStoredRun(latest));
+      });
   }, []);
 
   async function run() {
@@ -70,8 +103,15 @@ export default function RegressionPage() {
               {meta?.cases.length ?? LABELED_SUITE_SIZE} labeled documents covering distinct layouts and failure modes.
               Ground truth scores only fields that appear on each document.
             </p>
-            <div className="mt-2 inline-block rounded-full bg-stone-100 px-3 py-1 text-xs font-medium">
-              Provider: {(meta?.provider ?? "mock").toUpperCase()}
+            <div className="mt-2 flex flex-wrap gap-2">
+              <div className="inline-block rounded-full bg-stone-100 px-3 py-1 text-xs font-medium">
+                Provider: {(meta?.provider ?? "mock").toUpperCase()}
+              </div>
+              {result && (
+                <div className="inline-block rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-900">
+                  Last run #{result.runId} · Prompt v{result.promptVersion} · F1 {result.aggregate.lineItemF1.toFixed(2)}
+                </div>
+              )}
             </div>
           </div>
           <button className="rounded-full bg-teal-800 px-5 py-2 text-white disabled:opacity-50" onClick={run} disabled={busy}>
@@ -95,6 +135,26 @@ export default function RegressionPage() {
           </ol>
         )}
       </section>
+
+      {meta?.runs && meta.runs.length > 0 && (
+        <section className="rounded-2xl border border-stone-200 bg-white p-5">
+          <h2 className="mb-3 font-semibold">Recent runs</h2>
+          <ul className="space-y-2 text-sm">
+            {meta.runs.map((run) => (
+              <li key={run.id} className="flex justify-between border-t border-stone-100 py-2 first:border-0">
+                <span>
+                  Run #{run.id}
+                  {run.prompt_version != null ? ` · Prompt v${run.prompt_version}` : ""}
+                </span>
+                <span className="text-stone-500">
+                  {run.field_accuracy == null ? "—" : pct(run.field_accuracy)}
+                  {run.line_item_f1 == null ? "" : ` · F1 ${run.line_item_f1.toFixed(2)}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {result && (
         <section className="rounded-2xl border border-stone-200 bg-white p-5">

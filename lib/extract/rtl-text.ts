@@ -71,12 +71,16 @@ export function reverseHebrewRuns(text: string): string {
  */
 export function repairPdfTextItem(str: string, dir: string): string {
   if (!str.trim()) return str;
+
   const hebrew = hasHebrew(str);
-  if (!hebrew && dir !== "rtl") return str;
+
+  // Repair Hebrew only when the text itself clearly looks reversed.
+  // pdf.js may mark an item as RTL even when embedded numbers,
+  // dates and identifiers are already in their correct logical order.
   if (hebrew && REVERSED_HEBREW.test(str) && !LOGICAL_HEBREW.test(str)) {
     return reverseHebrewRuns(str);
   }
-  if (hebrew || dir === "rtl") return reverseLtrRuns(str);
+
   return str;
 }
 
