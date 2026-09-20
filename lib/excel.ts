@@ -100,7 +100,12 @@ function invoiceFingerprint(invoice: CanonicalInvoice): string {
 function sameInvoiceIdentity(a: ExcelJS.Row, invoice: CanonicalInvoice, messageId: string | null, sha256: string): boolean {
   const rowMessage = String(cellValue(a, "message_id") ?? "");
   const rowHash = String(cellValue(a, "sha256") ?? "");
-  if (messageId && rowMessage === messageId && rowHash === sha256) return true;
+
+  // The same attachment is the same document even if it was received
+  // under a different email Message-ID.
+  if (sha256 && rowHash === sha256) return true;
+
+  if (messageId && rowMessage === messageId) return true;
 
   const taxId = String(cellValue(a, "supplier_tax_id") ?? "");
   const docNo = String(cellValue(a, "document_number") ?? "");
@@ -473,6 +478,10 @@ function rebuildLineItems(workbook: ExcelJS.Workbook) {
   const invoices = workbook.getWorksheet("Invoices");
   invoices?.eachRow((row, number) => {
     if (number === 1) return;
+
+    const status = String(cellValue(row, "ledger_status") ?? "");
+    if (status === "superseded") return;
+
     const extractionId = Number(cellValue(row, "extraction_id") ?? 0);
     if (!extractionId) return;
     const rec = getDb()
