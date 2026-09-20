@@ -128,18 +128,19 @@ Processed records are written as active. Needs Review records remain in the ledg
 
 Ground truth בודק רק שדות שמופיעים במסמך. המודל לא נענש על Cost Center / GL Account שלא היו בדף. דיוק ברמת שדה, שורות פירוט ב-F1, ואחרי שינוי פרומפט — Before/After.
 
-### תוצאות עם GPT-4o
+## Regression Results
 
-הרגרסיה הורצה גם מול `LLM_PROVIDER=openai` על חמשת מסמכי הבדיקה. בכל הרצה שונה רכיב אחד בלבד:
+The extraction pipeline was evaluated on a labeled suite of five synthetic Hebrew supplier documents covering clean invoices, monthly settlements, PO/allocation fields, scanned PDFs, and arithmetic mismatches.
 
-| Run | Change | Field Accuracy | Line-item F1 |
-| --- | --- | ---: | ---: |
-| #9 | Prompt v1 baseline | 5.4% | 0.0 |
-| #10 | Structured-output prompt (v2) | 57.1% | 0.8 |
-| #11 | Deterministic RTL preprocessing | 83.9% | 0.8 |
-| #12 | Vision fallback fixed | **94.6%** | **0.8** |
+| Run | Configuration | Field Accuracy | Line-item F1 |
+|---|---|---:|---:|
+| #1 | Prompt v1 baseline | 57.1% | 0.85 |
+| #2 | Prompt v2 with stricter structured output and RTL guidance | 76.8% | 1.00 |
+| #3 | Prompt v2 + deterministic PDF RTL preprocessing fix | **98.2% (55/56)** | **1.00** |
 
-ב-Run #12 ארבעת מסמכי ה-PDF עם שכבת הטקסט הגיעו ל-47/47 שדות נכונים. שלוש טעויות השדה שנותרו היו במסמך הסרוק שעבר דרך Vision. לא בוצע tuning נוסף על חמשת מסמכי הבדיקה כדי לא לבצע overfitting למדגם קטן.
+The final improvement came from fixing deterministic PDF preprocessing rather than further tuning the LLM prompt. `pdf.js` may mark Hebrew text items as RTL even when embedded numbers, dates, and identifiers are already in logical order. Preserving those tokens prevented values such as dates, PO numbers, allocation numbers, and supplier identifiers from being reversed before they reached the model.
+
+The scanned fixture is processed through the Vision fallback. Financial validation remains deterministic and separate from extraction: the intentionally inconsistent invoice is correctly routed to `Needs Review` rather than being accepted based on the model output.
 
 ```bash
 npm run regression
